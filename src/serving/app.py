@@ -114,7 +114,7 @@ def create_app(config):
         parsed = safe_json_loads(raw_text)
         if parsed is None:
             response = {
-                "answer": "Model output was invalid JSON.",
+                "answer": raw_text.strip() or "No answer generated.",
                 "citations": [],
                 "tool_calls": [],
                 "refusal": False,
@@ -127,7 +127,7 @@ def create_app(config):
                 response = parsed
             else:
                 response = {
-                    "answer": "Model output did not match the required schema.",
+                    "answer": json.dumps(parsed) if isinstance(parsed, dict) else str(parsed),
                     "citations": [],
                     "tool_calls": [],
                     "refusal": False,

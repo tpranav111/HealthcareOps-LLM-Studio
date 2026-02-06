@@ -117,7 +117,7 @@ def _run_local(pipeline, query_text, variant):
 
     if parsed is None:
         response = {
-            "answer": "Model output was invalid JSON.",
+            "answer": raw_text.strip() or "No answer generated.",
             "citations": [],
             "tool_calls": [],
             "refusal": False,
@@ -129,7 +129,7 @@ def _run_local(pipeline, query_text, variant):
             response = parsed
         else:
             response = {
-                "answer": "Model output did not match the required schema.",
+                "answer": json.dumps(parsed) if isinstance(parsed, dict) else str(parsed),
                 "citations": [],
                 "tool_calls": [],
                 "refusal": False,

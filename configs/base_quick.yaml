@@ -8,7 +8,7 @@ paths:
   logs_dir: logs
 models:
   base_model_path: "tpranav/HealthcareLLM"
-  embedding_model_path: "C:\\Users\\Pranav Thorat\\.cache\\huggingface\\hub\\models--sentence-transformers--all-MiniLM-L6-v2\\snapshots\\c9745ed1d9f207416be6d2e6f8de32d1f16199bf"
+  embedding_model_path: "sentence-transformers/all-MiniLM-L6-v2"
   reranker_model_path: ""
   tokenizer_path: "${models.base_model_path}"
 runtime:

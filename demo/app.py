@@ -12,6 +12,7 @@ import requests
 import streamlit as st
 
 from src.core.config import deep_merge, load_config
+from src.rag.index import build_index
 from src.rag.retriever import HybridRetriever, build_citations
 from src.serving.model_runner import ModelRunner
 from src.serving.prompting import build_messages
@@ -42,9 +43,19 @@ def _load_local_pipeline(serving_cfg_path, rag_cfg_path, serving_mtime, rag_mtim
     config = deep_merge(config, {"rag": rag_config.get("rag", {})})
 
     rag_cfg = config.get("rag") or {}
+    index_dir = rag_cfg["index_dir"]
+    docs_path = os.path.join(index_dir, "docs.jsonl")
+    dense_path = os.path.join(index_dir, "dense.index")
+    if not (os.path.exists(docs_path) and os.path.exists(dense_path)):
+        build_index(
+            rag_cfg["corpus_path"],
+            config["models"]["embedding_model_path"],
+            index_dir,
+            normalize=rag_cfg.get("dense", {}).get("normalize", True),
+        )
     rerank_cfg = rag_cfg.get("rerank", {})
     retriever = HybridRetriever(
-        index_dir=rag_cfg["index_dir"],
+        index_dir=index_dir,
         embedding_model_path=config["models"]["embedding_model_path"],
         alpha=rag_cfg.get("hybrid", {}).get("alpha", 0.55),
         top_k=rag_cfg.get("top_k", 5),

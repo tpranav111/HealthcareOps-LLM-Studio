@@ -1,0 +1,29 @@
+{
+  "version": "0.1.0",
+  "datasets": [
+    {
+      "name": "clinical_corpus",
+      "path": "data/sample/clinical_corpus.jsonl",
+      "description": "Synthetic healthcare policy corpus for RAG",
+      "sha256": ""
+    },
+    {
+      "name": "sft_train",
+      "path": "data/sample/sft_train.jsonl",
+      "description": "Curriculum SFT data with tool calls and refusals",
+      "sha256": ""
+    },
+    {
+      "name": "dpo_train",
+      "path": "data/sample/dpo_train.jsonl",
+      "description": "Preference pairs for DPO",
+      "sha256": ""
+    },
+    {
+      "name": "eval",
+      "path": "data/sample/eval.jsonl",
+      "description": "Evaluation cases",
+      "sha256": ""
+    }
+  ]
+}

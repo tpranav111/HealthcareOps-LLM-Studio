@@ -1,0 +1,30 @@
+base_config: base_quick.yaml
+sft:
+  dataset_paths:
+    - data/sample/tiny_sft_train.jsonl
+  stage_order:
+    - single_turn
+  output_dir: artifacts/sft_tiny
+  max_steps: 1
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 1
+  learning_rate: 2.0e-4
+  warmup_steps: 0
+  logging_steps: 1
+  save_steps: 1
+  gradient_checkpointing: false
+  lora:
+    r: 8
+    alpha: 16
+    dropout: 0.05
+    target_modules: ["q_proj","k_proj","v_proj","o_proj","gate_proj","up_proj","down_proj"]
+  qlora:
+    enabled: false
+    use_4bit: true
+    bnb_4bit_quant_type: nf4
+    bnb_4bit_compute_dtype: float16
+  chat_template: auto
+  max_seq_len: 32
+  upload:
+    enabled: true
+    repo_id: "tpranav/HealthcareLLM-sft-tiny"

@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["answer", "citations", "tool_calls", "refusal", "follow_up"],
+  "properties": {
+    "answer": {"type": "string"},
+    "citations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["doc_id", "snippet"],
+        "properties": {
+          "doc_id": {"type": "string"},
+          "snippet": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "tool_calls": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "arguments"],
+        "properties": {
+          "name": {"type": "string"},
+          "arguments": {"type": "object"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "refusal": {"type": "boolean"},
+    "follow_up": {"type": "string"}
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,1 @@
+{"input":"What is the required turnaround time for routine radiology reports?","expected":{"refusal":false,"require_citations":true,"expected_tool":""},"tags":["policy","grounded"]}

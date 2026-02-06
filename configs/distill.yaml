@@ -1,0 +1,12 @@
+base_config: base.yaml
+distill:
+  teacher_model_path: "${models.base_model_path}"
+  student_model_path: ""
+  output_dir: artifacts/distill
+  dataset_path: data/sample/sft_train.jsonl
+  max_steps: 150
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 8
+  learning_rate: 5.0e-5
+  temperature: 2.0
+  max_new_tokens: 256

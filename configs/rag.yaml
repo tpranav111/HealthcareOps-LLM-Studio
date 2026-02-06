@@ -1,0 +1,17 @@
+base_config: base.yaml
+rag:
+  corpus_path: data/sample/clinical_corpus.jsonl
+  index_dir: artifacts/index
+  top_k: 5
+  cite_snippet_chars: 260
+  bm25:
+    k1: 1.5
+    b: 0.75
+  dense:
+    normalize: true
+  hybrid:
+    alpha: 0.55
+  rerank:
+    enabled: false
+    model_path: ""
+    top_k: 10

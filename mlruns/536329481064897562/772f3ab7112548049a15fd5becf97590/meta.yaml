@@ -1,0 +1,14 @@
+artifact_uri: file:C:/Users/Pranav Thorat/Desktop/LLM FT/mlruns/536329481064897562/772f3ab7112548049a15fd5becf97590/artifacts
+end_time: 1769897544592
+entry_point_name: ''
+experiment_id: '536329481064897562'
+lifecycle_stage: active
+run_id: 772f3ab7112548049a15fd5becf97590
+run_name: sft
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1769897344825
+status: 3
+tags: []
+user_id: Pranav Thorat

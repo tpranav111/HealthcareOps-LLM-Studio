@@ -1,0 +1,13 @@
+base_config: base_quick.yaml
+eval:
+  dataset_path: data/sample/tiny_eval.jsonl
+  output_path: artifacts/eval_results_tiny_sft.json
+  variant: sft
+  adapter_path: "tpranav/HealthcareLLM-sft-tiny"
+  max_new_tokens: 64
+  temperature: 0.2
+  top_p: 0.9
+  require_citations: true
+  schema_path: data/schemas/response_schema.json
+  allow_unsafe_eval: false
+  allow_medical_advice: true

@@ -1,0 +1,34 @@
+base_config: base.yaml
+sft:
+  dataset_paths:
+    - data/sample/sft_train.jsonl
+  stage_order:
+    - single_turn
+    - multi_turn
+    - tool_calls
+    - hard_negatives
+  output_dir: artifacts/sft
+  max_steps: 200
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 8
+  learning_rate: 2.0e-4
+  warmup_steps: 20
+  logging_steps: 10
+  save_steps: 100
+  gradient_checkpointing: true
+  lora:
+    r: 16
+    alpha: 32
+    dropout: 0.05
+    target_modules: ["q_proj","k_proj","v_proj","o_proj","gate_proj","up_proj","down_proj"]
+  qlora:
+    enabled: true
+    use_4bit: true
+    bnb_4bit_quant_type: nf4
+    bnb_4bit_compute_dtype: float16
+  chat_template: auto
+  max_seq_len: 2048
+  upload:
+    enabled: false
+    repo_id: "tpranav/HealthcareLLM"
+    subfolder: "adapters/sft"

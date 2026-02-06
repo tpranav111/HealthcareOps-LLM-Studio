@@ -1,0 +1,28 @@
+base_config: base.yaml
+serving:
+  host: 0.0.0.0
+  port: 8000
+  max_new_tokens: 256
+  temperature: 0.2
+  top_p: 0.9
+  cache_dir: artifacts/cache
+  batch:
+    enabled: true
+    max_batch_size: 4
+    max_wait_ms: 50
+  schema_path: data/schemas/response_schema.json
+  guardrails:
+    enable_refusals: false
+    enable_injection_filter: false
+    allow_medical_advice: true
+    medical_disclaimer: "This is general information, not a medical diagnosis. Please consult a licensed clinician."
+  variants:
+    baseline:
+      model_path: "${models.base_model_path}"
+      adapter_path: ""
+    sft:
+      model_path: "${models.base_model_path}"
+      adapter_path: "tpranav/HealthcareLLM::adapters/sft"
+    dpo:
+      model_path: "${models.base_model_path}"
+      adapter_path: "tpranav/HealthcareLLM::adapters/dpo"

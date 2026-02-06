@@ -1,0 +1,13 @@
+base_config: base_quick.yaml
+eval:
+  dataset_path: data/sample/eval.jsonl
+  output_path: artifacts/eval_results_baseline.json
+  variant: baseline
+  adapter_path: ""
+  max_new_tokens: 128
+  temperature: 0.2
+  top_p: 0.9
+  require_citations: true
+  schema_path: data/schemas/response_schema.json
+  allow_unsafe_eval: false
+  allow_medical_advice: true

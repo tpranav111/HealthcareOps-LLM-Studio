@@ -1,12 +1,13 @@
 import gc
 import json
 import os
+import re
 import sys
 import time
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT_DIR not in sys.path:
-    sys.path.append(ROOT_DIR)
+    sys.path.insert(0, ROOT_DIR)
 
 import requests
 import streamlit as st
@@ -15,9 +16,63 @@ from src.core.config import deep_merge, load_config
 from src.rag.index import build_index
 from src.rag.retriever import HybridRetriever, build_citations
 from src.serving.model_runner import ModelRunner
-from src.serving.prompting import build_messages
+from src.serving import prompting as _prompting
 from src.tools.registry import default_registry
 from src.utils.json_schema import load_schema, safe_json_loads, validate_json
+from src.utils import response_format as _response_format
+
+normalize_response = _response_format.normalize_response
+is_schema_like_text = getattr(_response_format, "is_schema_like_text", lambda _: False)
+build_messages = _prompting.build_messages
+
+_STOPWORDS = {
+    "a", "an", "and", "are", "as", "at", "be", "by", "for", "from", "how", "in", "is", "it",
+    "of", "on", "or", "that", "the", "to", "was", "were", "what", "when", "where", "which",
+    "who", "why", "with", "more", "about", "please", "answer", "detail", "details",
+}
+
+
+def _fallback_context_relevance(query, docs, min_overlap_ratio=0.2):
+    query_tokens = {
+        token for token in re.findall(r"[a-z0-9]+", (query or "").lower()) if token not in _STOPWORDS
+    }
+    if not query_tokens or not docs:
+        return False
+    doc_tokens = set()
+    for doc in docs[:3]:
+        text = doc.get("text", "") if isinstance(doc, dict) else ""
+        doc_tokens.update(
+            token for token in re.findall(r"[a-z0-9]+", text.lower()) if token not in _STOPWORDS
+        )
+    if not doc_tokens:
+        return False
+    overlap = len(query_tokens.intersection(doc_tokens))
+    return (overlap / max(1, len(query_tokens))) >= min_overlap_ratio
+
+
+is_context_relevant = getattr(_prompting, "is_context_relevant", _fallback_context_relevance)
+
+
+def _build_messages_for_query(query_text, docs, tools, schema, relevant):
+    if relevant:
+        return build_messages(query_text, docs, tools, schema)
+    system_builder = getattr(_prompting, "build_system_prompt", None)
+    if callable(system_builder):
+        system_prompt = system_builder(schema, tools)
+    else:
+        system_prompt = (
+            "You are a healthcare assistant. Return only JSON with keys: "
+            "answer, citations, tool_calls, refusal, follow_up."
+        )
+    user_prompt = (
+        "Context:\nNo relevant internal policy context retrieved for this question."
+        "\n\nUser question: " + query_text +
+        "\nAnswer directly using general knowledge. Set citations to an empty list. Return only JSON."
+    )
+    return [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt},
+    ]
 
 st.set_page_config(page_title="Healthcare LLM Demo", layout="wide")
 
@@ -91,50 +146,51 @@ def _run_local(pipeline, query_text, variant):
     t0 = time.time()
     retrieval = retriever.retrieve(query_text, top_k=rag_cfg.get("top_k", 5))
     t1 = time.time()
-    citations = build_citations(retrieval, max_chars=rag_cfg.get("cite_snippet_chars", 260))
-    messages = build_messages(query_text, [item["doc"] for item in retrieval], tools.list_tools(), schema)
+    docs = [item["doc"] for item in retrieval]
+    relevant = is_context_relevant(query_text, docs)
+    citations = build_citations(retrieval, max_chars=rag_cfg.get("cite_snippet_chars", 260)) if relevant else []
+    messages = _build_messages_for_query(query_text, docs, tools.list_tools(), schema, relevant)
 
     variant_cfg = variants.get(variant) or variants.get("baseline")
     runner = None
+    raw_text = ""
+    parsed = None
     try:
         runner = ModelRunner(variant_cfg["model_path"], variant_cfg.get("adapter_path") or None)
         raw_text = runner.generate(messages, **params)
+        parsed = safe_json_loads(raw_text)
+        if parsed is None:
+            # Retry once with a stricter JSON-only instruction.
+            retry_messages = [
+                {"role": "system", "content": "Return ONLY valid JSON that matches the schema. No prose."},
+                *messages,
+            ]
+            raw_text = runner.generate(retry_messages, **params)
+            parsed = safe_json_loads(raw_text)
+        response = normalize_response(parsed, raw_text, citations)
+        if is_schema_like_text(response.get("answer", "")):
+            repair_messages = [
+                {
+                    "role": "system",
+                    "content": (
+                        "Do NOT output JSON schema descriptors like $schema, type, properties, or required. "
+                        "Return only a JSON object with keys answer, citations, tool_calls, refusal, follow_up."
+                    ),
+                },
+                *messages,
+            ]
+            raw_text = runner.generate(repair_messages, **params)
+            parsed = safe_json_loads(raw_text)
         t2 = time.time()
     finally:
         if runner is not None:
             del runner
         gc.collect()
 
-    parsed = safe_json_loads(raw_text)
-    if parsed is None:
-        # Retry once with a stricter JSON-only instruction.
-        retry_messages = [
-            {"role": "system", "content": "Return ONLY valid JSON that matches the schema. No prose."},
-            *messages,
-        ]
-        raw_text = runner.generate(retry_messages, **params)
-        parsed = safe_json_loads(raw_text)
-
-    if parsed is None:
-        response = {
-            "answer": raw_text.strip() or "No answer generated.",
-            "citations": [],
-            "tool_calls": [],
-            "refusal": False,
-            "follow_up": "",
-        }
-    else:
-        valid, _ = validate_json(parsed, schema)
-        if valid:
-            response = parsed
-        else:
-            response = {
-                "answer": json.dumps(parsed) if isinstance(parsed, dict) else str(parsed),
-                "citations": [],
-                "tool_calls": [],
-                "refusal": False,
-                "follow_up": "",
-            }
+    response = normalize_response(parsed, raw_text, citations)
+    valid, _ = validate_json(response, schema)
+    if not valid:
+        response = normalize_response(None, raw_text, citations)
 
     return {
         "response": response,
